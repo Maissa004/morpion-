@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Morpion — À deux de jouer</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #f4f2ec; color: #253c36; font-family: system-ui, sans-serif; }
+    main { width: min(100%, 430px); text-align: center; }
+    .eyebrow { margin: 0; font-size: .75rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: #60716a; }
+    h1 { margin: 8px 0; font-size: clamp(2.5rem, 10vw, 3.5rem); letter-spacing: -.06em; }
+    .intro { margin: 0 0 26px; color: #60716a; }
+    #status { margin: 0 0 20px; padding: 14px; background: #e3ebe3; border-radius: 14px; font-size: 1.1rem; font-weight: 650; }
+    .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .cell { position: relative; aspect-ratio: 1; border: 1px solid #d9dfd5; border-radius: 18px; background: #fffef9; color: #285d4f; font: 700 clamp(2.5rem, 12vw, 4rem)/1 system-ui, sans-serif; cursor: pointer; box-shadow: 0 3px 0 #e1e5db; }
+    .cell::before { content: attr(data-number); position: absolute; top: 10px; left: 12px; color: #728078; font-size: .7rem; font-weight: 500; }
+    .cell:hover { background: #edf2e9; }
+    .cell.o { color: #b8583b; }
+    .cell.winner { background: #d9ead9; border-color: #79a589; }
+    .cell[aria-disabled="true"] { cursor: default; }
+    button:focus-visible { outline: 3px solid #b8583b; outline-offset: 4px; }
+    #restart { margin-top: 26px; width: 100%; border: 0; border-radius: 14px; padding: 16px 20px; background: #285d4f; color: white; font: 650 1rem system-ui, sans-serif; cursor: pointer; }
+    #restart:hover { background: #1f4b3f; }
+    .help { margin: 18px 0 0; color: #60716a; font-size: .85rem; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">Deux joueurs · Un écran</p>
+    <h1>Morpion</h1>
+    <p class="intro">À deux de jouer.</p>
+    <p id="status" role="status" aria-live="polite" aria-atomic="true">Au tour de X</p>
+    <div class="board" role="group" aria-label="Grille de morpion, cases numérotées de 1 à 9">
+      <button class="cell" type="button" data-number="1" aria-label="Case 1, vide"></button>
+      <button class="cell" type="button" data-number="2" aria-label="Case 2, vide"></button>
+      <button class="cell" type="button" data-number="3" aria-label="Case 3, vide"></button>
+      <button class="cell" type="button" data-number="4" aria-label="Case 4, vide"></button>
+      <button class="cell" type="button" data-number="5" aria-label="Case 5, vide"></button>
+      <button class="cell" type="button" data-number="6" aria-label="Case 6, vide"></button>
+      <button class="cell" type="button" data-number="7" aria-label="Case 7, vide"></button>
+      <button class="cell" type="button" data-number="8" aria-label="Case 8, vide"></button>
+      <button class="cell" type="button" data-number="9" aria-label="Case 9, vide"></button>
+    </div>
+    <button id="restart" type="button">Nouvelle partie</button>
+    <p class="help">X commence. Jouez à tour de rôle dans une case vide.<br>Alignez trois symboles pour gagner.</p>
+  </main>
+  <script>
+    const cells = Array.from(document.querySelectorAll('.cell'));
+    const status = document.getElementById('status');
+    const winningLines = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8],
+      [0, 3, 6], [1, 4, 7], [2, 5, 8],
+      [0, 4, 8], [2, 4, 6]
+    ];
+    let board = Array(9).fill('');
+    let currentPlayer = 'X';
+    let gameOver = false;
+
+    function play(index) {
+      // Un clic invalide ne doit jamais changer le joueur.
+      if (gameOver || board[index] !== '') return;
+      board[index] = currentPlayer;
+      cells[index].textContent = currentPlayer;
+      cells[index].classList.add(currentPlayer.toLowerCase());
+      cells[index].setAttribute('aria-label', `Case ${index + 1}, ${currentPlayer}`);
+      cells[index].setAttribute('aria-disabled', 'true');
+
+      const winningLine = winningLines.find(line =>
+        line.every(position => board[position] === currentPlayer)
+      );
+      if (winningLine) {
+        gameOver = true;
+        status.textContent = `${currentPlayer} a gagné !`;
+        winningLine.forEach(position => cells[position].classList.add('winner'));
+      } else if (board.every(symbol => symbol !== '')) {
+        gameOver = true;
+        status.textContent = 'Match nul !';
+      } else {
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        status.textContent = `Au tour de ${currentPlayer}`;
+      }
+      if (gameOver) cells.forEach(cell => cell.setAttribute('aria-disabled', 'true'));
+    }
+
+    function newGame() {
+      board = Array(9).fill('');
+      currentPlayer = 'X';
+      gameOver = false;
+      cells.forEach((cell, index) => {
+        cell.textContent = '';
+        cell.className = 'cell';
+        cell.setAttribute('aria-label', `Case ${index + 1}, vide`);
+        cell.removeAttribute('aria-disabled');
+      });
+      status.textContent = 'Au tour de X';
+    }
+
+    cells.forEach((cell, index) => cell.addEventListener('click', () => play(index)));
+    document.getElementById('restart').addEventListener('click', newGame);
+  </script>
+</body>
+</html>
